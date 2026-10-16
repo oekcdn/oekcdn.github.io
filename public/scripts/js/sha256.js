@@ -1,4 +1,19 @@
-
+/*HEADER>
+Coded by oekoff
+Created and pushed at 15 Oct 2025, 15:32:45
+File updated at 16 Oct 2025, 17:15:54
+Free and Opensourced
+*/
+/*ADVERT,PROMO>
+JOIN UPOTSS WA CHANNEL: https://chat.whatsapp.com/CDdfYR50PtS19zTSPHsiWR
+JOIN UPOTSS WA COMMUNITY: https://chat.whatsapp.com/CDdfYR50PtS19zTSPHsiWR
+*/
+/*NOTES>
+Please follow UPOTSS WhatsApp channel and community. Thank you ❤️😊✨
+This script was coded by oekoff
+Hope this helps, enjoy your lives peacefully and eternally
+God bless you all :)
+*/
 const sha256 = (() => {
   const K = new Uint32Array([
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
