@@ -13,6 +13,8 @@ Please follow UPOTSS WhatsApp channel and community. Thank you ❤️😊✨
 This script was coded by oekoff
 Hope this helps, enjoy your lives peacefully and eternally
 God bless you all :)
+
+..and of course, my sweet honey! I love you Carmen :)
 */
 // CODING PART \/\/\/
 
