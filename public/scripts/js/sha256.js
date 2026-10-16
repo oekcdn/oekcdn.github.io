@@ -14,6 +14,9 @@ This script was coded by oekoff
 Hope this helps, enjoy your lives peacefully and eternally
 God bless you all :)
 */
+// CODING PART \/\/\/
+
+
 const sha256 = (() => {
   const K = new Uint32Array([
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
