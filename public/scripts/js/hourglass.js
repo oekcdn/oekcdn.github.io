@@ -17,7 +17,9 @@ God bless you all :)
 ..and of course, my sweet honey! I love you Carmen :)
 */
 // CODING PART \\\\\\
-
+console.log(`<hourglass> coded by @oekoff on 18 Oct 2026 18:33:14.`);
+console.log(`Example: <hourglass rotSpd="500" size="32px" pauseDur="1000" rotDir="cw">⏳</hourglass>`);
+console.log(`rotDir="cw" or rotDir="ccw");
 document.querySelectorAll("hourglass").forEach(hourglass => {
     const rotSpd = Number(hourglass.getAttribute("rotSpd")) || 500;
     const size = hourglass.getAttribute("size") || "10px";
