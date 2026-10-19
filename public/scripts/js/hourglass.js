@@ -1,7 +1,7 @@
 /*HEADER>
 Coded by oekoff
 Created and pushed at 18 Oct 2026, 18:33:14
-File updated at 18 Oct 2026, 18:33:23
+File updated at 19 Oct 2026, 17:58:45
 Free and Opensourced
 */
 /*ADVERT,PROMO>
@@ -16,21 +16,28 @@ God bless you all :)
 
 ..and of course, my sweet honey! I love you Carmen :)
 */
-// CODING PART \/\/\/
+// CODING PART \\\\\\
 
 document.querySelectorAll("hourglass").forEach(hourglass => {
     const rotSpd = Number(hourglass.getAttribute("rotSpd")) || 500;
     const size = hourglass.getAttribute("size") || "10px";
     const pauseDur = Number(hourglass.getAttribute("pauseDur")) || 1000;
+    const rotDir = (hourglass.getAttribute("rotDir") || "cw").toLowerCase();
+
+    const direction = rotDir === "ccw" ? -1 : 1;
 
     hourglass.style.display = "inline-block";
     hourglass.style.fontSize = size;
 
+    let angle = 0;
+
     const rotate = () => {
+        const nextAngle = angle + (180 * direction);
+
         hourglass.animate(
             [
-                { transform: "rotate(0deg)" },
-                { transform: "rotate(180deg)" }
+                { transform: `rotate(${angle}deg)` },
+                { transform: `rotate(${nextAngle}deg)` }
             ],
             {
                 duration: rotSpd,
@@ -38,21 +45,8 @@ document.querySelectorAll("hourglass").forEach(hourglass => {
                 fill: "forwards"
             }
         ).onfinish = () => {
-            setTimeout(() => {
-                hourglass.animate(
-                    [
-                        { transform: "rotate(180deg)" },
-                        { transform: "rotate(360deg)" }
-                    ],
-                    {
-                        duration: rotSpd,
-                        easing: "linear",
-                        fill: "forwards"
-                    }
-                ).onfinish = () => {
-                    setTimeout(rotate, pauseDur);
-                };
-            }, pauseDur);
+            angle = nextAngle;
+            setTimeout(rotate, pauseDur);
         };
     };
 
