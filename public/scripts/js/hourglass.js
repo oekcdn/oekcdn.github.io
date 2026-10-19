@@ -19,9 +19,9 @@ God bless you all :)
 // CODING PART \\\\\\
 
 
-console.log(`<hourglass> coded by @oekoff on 18 Oct 2026 18:33:14.`);
-console.log(`Example: <hourglass rotSpd="500" size="32px" pauseDur="1000" rotDir="cw">⏳</hourglass>`);
-console.log(`rotDir="cw" or rotDir="ccw"`);
+console.log("%c<hourglass> coded by @oekoff on 18 Oct 2026 18:33:14.", "color: lime;");
+console.log(`%cExample: <hourglass rotSpd="500" size="32px" pauseDur="1000" rotDir="cw">⏳</hourglass>`, "color: lime;");
+console.log(`%crotDir="cw" or rotDir="ccw"`, "color:lime");
 
 
 document.querySelectorAll("hourglass").forEach(hourglass => {
