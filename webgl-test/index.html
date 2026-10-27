@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebGL Diagnostic Test</title>
+<style>
+  body {
+    background: #10141c;
+    color: #e6edf3;
+    font: 16px system-ui, sans-serif;
+    max-width: 850px;
+    margin: 30px auto;
+    padding: 0 18px;
+  }
+  h1 { color: #58a6ff; }
+  .panel {
+    background: #1c2330;
+    padding: 18px;
+    border-radius: 12px;
+    margin: 14px 0;
+  }
+  .ok { color: #3fb950; }
+  .bad { color: #ff6b6b; }
+  .info { color: #d2a8ff; }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 360px;
+    background: #080b12;
+    border-radius: 8px;
+  }
+  button {
+    padding: 10px 16px;
+    background: #238636;
+    color: white;
+    border: 0;
+    border-radius: 7px;
+    cursor: pointer;
+    margin: 4px;
+  }
+  pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+</style>
+</head>
+<body>
+
+<h1>WebGL Diagnostic Test</h1>
+<p>Tests WebGL availability, GPU information, and real-time 3D rendering.</p>
+
+<div class="panel">
+  <h2>1. Browser Support</h2>
+  <p id="webgl1">Checking WebGL 1...</p>
+  <p id="webgl2">Checking WebGL 2...</p>
+  <p id="status">Initializing renderer...</p>
+</div>
+
+<div class="panel">
+  <h2>2. GPU Information</h2>
+  <pre id="gpu">Checking GPU information...</pre>
+</div>
+
+<div class="panel">
+  <h2>3. Live 3D Rendering</h2>
+  <canvas id="canvas"></canvas>
+  <p id="fps">FPS: measuring...</p>
+  <button onclick="location.reload()">Run Test Again</button>
+</div>
+
+<div class="panel">
+  <h2>4. Diagnostics</h2>
+  <pre id="diagnostics"></pre>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $("canvas");
+
+function testContext(type) {
+  const c = document.createElement("canvas");
+  try {
+    return c.getContext(type);
+  } catch (e) {
+    return null;
+  }
+}
+
+const gl2 = testContext("webgl2");
+const gl1 = gl2 || testContext("webgl") ||
+                   testContext("experimental-webgl");
+
+$("webgl1").innerHTML =
+  "WebGL 1: " +
+  (gl1 ? '<span class="ok">SUPPORTED</span>'
+       : '<span class="bad">UNAVAILABLE</span>');
+
+$("webgl2").innerHTML =
+  "WebGL 2: " +
+  (gl2 ? '<span class="ok">SUPPORTED</span>'
+       : '<span class="bad">UNAVAILABLE</span>');
+
+if (!gl1) {
+  $("status").innerHTML =
+    '<span class="bad">WebGL initialization failed.</span>';
+  $("gpu").textContent =
+    "No WebGL context could be created.";
+  $("diagnostics").textContent =
+    "Try enabling hardware acceleration in Chrome settings.";
+} else {
+  const gl = gl2 || gl1;
+  const ext = gl.getExtension("WEBGL_debug_renderer_info");
+
+  const vendor = ext
+    ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL)
+    : gl.getParameter(gl.VENDOR);
+
+  const renderer = ext
+    ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)
+    : gl.getParameter(gl.RENDERER);
+
+  $("gpu").textContent =
+    "WebGL version: " + gl.getParameter(gl.VERSION) + "\n" +
+    "GLSL version: " + gl.getParameter(gl.SHADING_LANGUAGE_VERSION) + "\n" +
+    "Vendor: " + vendor + "\n" +
+    "Renderer: " + renderer + "\n" +
+    "Canvas size: " + canvas.width + " x " + canvas.height + "\n" +
+    "Hardware concurrency: " + navigator.hardwareConcurrency + " threads";
+
+  $("status").innerHTML =
+    '<span class="ok">WebGL context created successfully.</span>';
+
+  $("diagnostics").textContent =
+    "Context: " + (gl2 ? "WebGL 2" : "WebGL 1") + "\n" +
+    "User agent: " + navigator.userAgent + "\n" +
+    "Context lost: " + gl.isContextLost();
+
+  // Use the existing context for the rendering test.
+  const ctx = canvas.getContext(gl2 ? "webgl2" : "webgl");
+
+  const vertexShader = `
+    attribute vec3 position;
+    uniform float angle;
+    void main() {
+      float c = cos(angle);
+      float s = sin(angle);
+      vec3 p = vec3(
+        position.x * c - position.z * s,
+        position.y,
+        position.x * s + position.z * c
+      );
+      gl_Position = vec4(
+        p.x / (2.0 - p.z * 0.3),
+        p.y / (2.0 - p.z * 0.3),
+        p.z * 0.3,
+        1.0
+      );
+    }
+  `;
+
+  const fragmentShader = `
+    precision mediump float;
+    uniform vec4 faceColor;
+    void main() {
+      gl_FragColor = faceColor;
+    }
+  `;
+
+  function compile(type, source) {
+    const shader = ctx.createShader(type);
+    ctx.shaderSource(shader, source);
+    ctx.compileShader(shader);
+    if (!ctx.getShaderParameter(shader, ctx.COMPILE_STATUS)) {
+      throw new Error(ctx.getShaderInfoLog(shader));
+    }
+    return shader;
+  }
+
+  try {
+    const program = ctx.createProgram();
+    ctx.attachShader(program, compile(ctx.VERTEX_SHADER, vertexShader));
+    ctx.attachShader(program, compile(ctx.FRAGMENT_SHADER, fragmentShader));
+    ctx.linkProgram(program);
+
+    if (!ctx.getProgramParameter(program, ctx.LINK_STATUS)) {
+      throw new Error(ctx.getProgramInfoLog(program));
+    }
+
+    ctx.useProgram(program);
+
+    const vertices = new Float32Array([
+      // Front face
+      -1,-1, 1,  1,-1, 1,  1, 1, 1,
+      -1,-1, 1,  1, 1, 1, -1, 1, 1,
+      // Back face
+      -1,-1,-1, -1, 1,-1,  1, 1,-1,
+      -1,-1,-1,  1, 1,-1,  1,-1,-1,
+      // Top
+      -1,1,-1, -1,1,1, 1,1,1,
+      -1,1,-1, 1,1,1, 1,1,-1,
+      // Bottom
+      -1,-1,-1, 1,-1,-1, 1,-1,1,
+      -1,-1,-1, 1,-1,1, -1,-1,1,
+      // Right
+      1,-1,-1, 1,1,-1, 1,1,1,
+      1,-1,-1, 1,1,1, 1,-1,1,
+      // Left
+      -1,-1,-1, -1,-1,1, -1,1,1,
+      -1,-1,-1, -1,1,1, -1,1,-1
+    ]);
+
+    const buffer = ctx.createBuffer();
+    ctx.bindBuffer(ctx.ARRAY_BUFFER, buffer);
+    ctx.bufferData(ctx.ARRAY_BUFFER, vertices, ctx.STATIC_DRAW);
+
+    const pos = ctx.getAttribLocation(program, "position");
+    ctx.enableVertexAttribArray(pos);
+    ctx.vertexAttribPointer(pos, 3, ctx.FLOAT, false, 0, 0);
+
+    const angleLoc = ctx.getUniformLocation(program, "angle");
+    const colorLoc = ctx.getUniformLocation(program, "faceColor");
+
+    const colors = [
+      [1,.2,.25,1], [.2,.4,1,1], [.2,1,.5,1],
+      [1,.8,.2,1], [.8,.2,1,1], [.2,1,1,1]
+    ];
+
+    let angle = 0;
+    let frames = 0;
+    let lastTime = performance.now();
+    let lastFpsTime = lastTime;
+
+    function render(now) {
+      if (gl.isContextLost()) {
+        $("status").textContent = "WebGL context lost!";
+        return;
+      }
+
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rw = Math.round(w * dpr);
+      const rh = Math.round(h * dpr);
+
+      if (canvas.width !== rw || canvas.height !== rh) {
+        canvas.width = rw;
+        canvas.height = rh;
+      }
+
+      ctx.viewport(0, 0, canvas.width, canvas.height);
+      ctx.clearColor(.03, .05, .09, 1);
+      ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+      ctx.enable(ctx.DEPTH_TEST);
+
+      ctx.uniform1f(angleLoc, angle);
+      angle += Math.min((now - lastTime) / 1000, .1);
+      lastTime = now;
+
+      for (let i = 0; i < 6; i++) {
+        ctx.uniform4fv(colorLoc, colors[i]);
+        ctx.drawArrays(ctx.TRIANGLES, i * 6, 6);
+      }
+
+      frames++;
+      if (now - lastFpsTime >= 1000) {
+        $("fps").textContent =
+          "FPS: " + Math.round(frames * 1000 / (now - lastFpsTime));
+        frames = 0;
+        lastFpsTime = now;
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+    $("status").innerHTML +=
+      '<br><span class="ok">3D rendering test started.</span>';
+
+  } catch (e) {
+    $("status").innerHTML =
+      '<span class="bad">Shader/rendering error: ' +
+      e.message.replace(/</g, "&lt;") + '</span>';
+    $("diagnostics").textContent += "\nError: " + e.stack;
+  }
+}
+</script>
+</body>
+</html>
