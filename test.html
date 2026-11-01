@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMDB Scraper</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: white;
+            padding: 20px;
+        }
+
+        input, button {
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+        }
+
+        input {
+            width: 65%;
+            background: #222;
+            color: white;
+        }
+
+        button {
+            background: #01b4e4;
+            color: black;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #90cea1;
+        }
+
+        pre {
+            background: #1c1c1c;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        #status {
+            color: #90cea1;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>TMDB Search Scraper</h2>
+
+    <input
+        type="text"
+        id="query"
+        placeholder="Search movies or TV shows..."
+    >
+
+    <button onclick="search()">Search</button>
+
+    <div id="status"></div>
+
+    <h3>JSON Output</h3>
+    <pre id="output">Search something...</pre>
+
+    <script>
+        async function searchTMDB(query) {
+            if (!query) {
+                throw new Error("Missing query");
+            }
+
+            const response = await fetch(
+                "https://www.themoviedb.org/search?query=" +
+                encodeURIComponent(query)
+            );
+
+            if (!response.ok) {
+                throw new Error("HTTP Error: " + response.status);
+            }
+
+            const html = await response.text();
+
+            const doc = new DOMParser().parseFromString(
+                html,
+                "text/html"
+            );
+
+            const results = [];
+
+            doc.querySelectorAll(".comp\\:media-card").forEach(el => {
+
+                const mediaLink = el.querySelector(
+                    'a[href*="/movie/"], a[href*="/tv/"], a[href*="/collection/"]'
+                )?.getAttribute("href") || null;
+
+                let tmdb_id = null;
+                let media_type = null;
+
+                if (mediaLink) {
+                    const match = mediaLink.match(
+                        /\/(movie|tv|collection)\/(\d+)/
+                    );
+
+                    if (match) {
+                        media_type = match[1];
+                        tmdb_id = Number(match[2]);
+                    }
+                }
+
+                const title =
+                    el.querySelector("h2 span")?.textContent.trim() || "";
+
+                const description =
+                    el.querySelector(".mt-4 p")?.textContent.trim() || "";
+
+                const release_date =
+                    el.querySelector(".release_date")
+                    ?.textContent.replace(/\s+/g, " ").trim() || "";
+
+                const posterSrc =
+                    el.querySelector("img.poster")?.getAttribute("src") || null;
+
+                let poster = null;
+
+                if (posterSrc) {
+                    poster = posterSrc.startsWith("http")
+                        ? posterSrc.replace(
+                            "/w94_and_h141_face/",
+                            "/w500/"
+                        )
+                        : "https://media.themoviedb.org" +
+                          posterSrc.replace(
+                              "/w94_and_h141_face/",
+                              "/w500/"
+                          );
+                }
+
+                results.push({
+                    tmdb_id,
+                    media_type,
+                    title,
+                    description,
+                    release_date,
+                    poster,
+                    url: mediaLink
+                        ? `https://www.themoviedb.org${mediaLink}`
+                        : null
+                });
+            });
+
+            return results;
+        }
+
+        async function search() {
+            const query = document.getElementById("query").value.trim();
+            const output = document.getElementById("output");
+            const status = document.getElementById("status");
+
+            if (!query) {
+                status.textContent = "Enter a search query.";
+                return;
+            }
+
+            status.textContent = "Searching...";
+            output.textContent = "";
+
+            try {
+                const results = await searchTMDB(query);
+
+                output.textContent = JSON.stringify(
+                    results,
+                    null,
+                    4
+                );
+
+                status.textContent =
+                    `Found ${results.length} results.`;
+
+            } catch (error) {
+                status.textContent = "Search failed!";
+                output.textContent = error.message;
+                console.error(error);
+            }
+        }
+
+        document.getElementById("query")
+            .addEventListener("keydown", event => {
+                if (event.key === "Enter") {
+                    search();
+                }
+            });
+    </script>
+
+</body>
+</html>
